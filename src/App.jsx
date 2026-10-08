@@ -64,30 +64,46 @@ export default function App() {
 
   const exportToPDF = () => {
     try {
-      const doc = new jsPDF();
-      doc.setFillColor(43, 67, 110);
-      doc.rect(0, 0, 210, 28, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`DDD Executive Report: ${activeTab.replace('_', ' ').toUpperCase()}`, 14, 18);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 130, 18);
-
-      if (filteredData.length > 0) {
-        const tableHeaders = [Object.keys(filteredData[0]).map((h) => h.toUpperCase().replace('_', ' '))];
-        const tableRows = filteredData.map((row) => Object.values(row));
-
-        autoTable(doc, {
-          startY: 36,
-          head: tableHeaders,
-          body: tableRows,
-          theme: 'striped',
-          headStyles: { fillColor: [43, 67, 110], textColor: [255, 255, 255] },
-          alternateRowStyles: { fillColor: [241, 245, 249] },
-        });
+      if (!filteredData || filteredData.length === 0) {
+        alert('No data available to export!');
+        return;
       }
+
+      // Initialize landscape orientation for wide operational tables
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      // Top Banner
+      doc.setFillColor(43, 67, 110);
+      doc.rect(0, 0, pageWidth, 24, 'F');
+
+      // Title Text
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`DDD Executive Report: ${activeTab.replace(/_/g, ' ').toUpperCase()}`, 14, 16);
+
+      // Timestamp Text
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - 14, 16, { align: 'right' });
+
+      // Table Headers and Body Mapping
+      const tableHeaders = [Object.keys(filteredData[0]).map((h) => h.replace(/_/g, ' ').toUpperCase())];
+      const tableRows = filteredData.map((row) => Object.values(row).map((v) => v ?? ''));
+
+      // Render autoTable directly
+      autoTable(doc, {
+        startY: 30,
+        head: tableHeaders,
+        body: tableRows,
+        theme: 'striped',
+        styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
+        headStyles: { fillColor: [43, 67, 110], textColor: [255, 255, 255], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [241, 245, 249] },
+        margin: { left: 14, right: 14 }
+      });
+
       doc.save(`DDD_${activeTab.toUpperCase()}_Report.pdf`);
     } catch (err) {
       console.error('PDF Export Error:', err);
@@ -163,7 +179,7 @@ export default function App() {
 
       <div className="main-wrapper">
         <header className="top-header">
-          <h2 className="page-title">{activeTab.replace('_', ' ').toUpperCase()} MODULE</h2>
+          <h2 className="page-title">{activeTab.replace(/_/g, ' ').toUpperCase()} MODULE</h2>
           <span style={{ fontSize: '12px', color: '#64748b' }}>Last Auto-Synced: {lastUpdated}</span>
         </header>
 
@@ -193,7 +209,7 @@ export default function App() {
             <input
               type="text"
               className="search-input"
-              placeholder={`🔍 Search ${activeTab.replace('_', ' ')} records...`}
+              placeholder={`🔍 Search ${activeTab.replace(/_/g, ' ')} records...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -210,7 +226,7 @@ export default function App() {
           {/* Dynamic Table */}
           <div className="card">
             <div className="card-header">
-              <h3 style={{ color: '#2b436e', fontSize: '16px' }}>{activeTab.replace('_', ' ').toUpperCase()} SHEET DATA</h3>
+              <h3 style={{ color: '#2b436e', fontSize: '16px' }}>{activeTab.replace(/_/g, ' ').toUpperCase()} SHEET DATA</h3>
               <span className="badge-label">Showing {filteredData.length} of {currentDataset.length} Records</span>
             </div>
 
@@ -225,7 +241,7 @@ export default function App() {
                     <tr>
                       {filteredData.length > 0 ? (
                         Object.keys(filteredData[0]).map((head) => (
-                          <th key={head}>{head.replace('_', ' ').toUpperCase()}</th>
+                          <th key={head}>{head.replace(/_/g, ' ').toUpperCase()}</th>
                         ))
                       ) : (
                         <th>No Records Found</th>
